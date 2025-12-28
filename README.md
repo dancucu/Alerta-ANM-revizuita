@@ -6,4 +6,4 @@ Cerințe Prealabile
 •	Cardul custom fold-entity-row instalat din HACS.
 •	Senzorii vor fi instalati în locația templates/ iar pentrtu a putea fi citiți trebuie să adăugați in configuration.yaml aceasta linie:
 template: !include_dir_merge_list templates/
-
+În fișierul docx găsiți toată procedura precum și explicații detaliate.
