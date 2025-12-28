@@ -1,0 +1,65 @@
+- sensor:
+    - name: "Mesaj Meteo Galati"
+      unique_id: mesaj_meteo_galati
+      icon: mdi:alert-decagram
+      state: >
+        {% set gl = state_attr('sensor.avertizari_meteo_anm', 'avertizari') | selectattr('judet', 'eq', 'GL') | list %}
+        {{ 'alerta' if gl | length > 0 else 'liniste' }}
+      attributes:
+        # Aici calculăm cel mai grav cod bazat pe ID-ul culorii din toate mesajele active
+        # 3=Rosu, 2=Portocaliu, 1=Galben, 0=Verde
+        tip_cod: >
+          {% set gl = state_attr('sensor.avertizari_meteo_anm', 'avertizari') | selectattr('judet', 'eq', 'GL') | list %}
+          {% set max_code = gl | map(attribute='culoare') | map('int') | max | default(0) %}
+          {% if max_code == 3 %} Rosu
+          {% elif max_code == 2 %} Portocaliu
+          {% elif max_code == 1 %} Galben
+          {% else %} Verde
+          {% endif %}
+        
+        mesaj_complet: >
+          {% set gl_list = state_attr('sensor.avertizari_meteo_anm', 'avertizari') | selectattr('judet', 'eq', 'GL') | list %}
+          
+          {% if gl_list | length > 0 %}
+            {% set ns = namespace(text_final='') %}
+            
+            {% for item in gl_list %}
+              {# 1. Curățăm HTML-ul de bază #}
+              {% set msg_raw = item.mesaj | replace('<br />', '\n') | replace('</p>', '\n') | regex_replace('<[^>]*>', '') | replace('&nbsp;', ' ') | replace('&ndash;', '-') | trim %}
+              
+              {# 2. LOGICA DE FILTRARE: Ștergem părțile care nu corespund culorii curente #}
+              {# Definim ce culoare are mesajul curent (1=Galben, 2=Portocaliu, 3=Roșu) #}
+              {% set cod = item.culoare | int(0) %}
+              
+              {# Aplicăm filtre Regex pentru a elimina blocurile de text ale altor coduri #}
+              {# Regex-ul caută "COD X" și șterge totul până la următorul "COD Y" sau finalul textului #}
+              
+              {% if cod == 1 %}
+                 {# Dacă e GALBEN, ștergem Portocaliu și Roșu #}
+                 {% set msg_raw = msg_raw | regex_replace('COD PORTOCALIU[\\s\\S]*?(?=COD|$)', '') %}
+                 {% set msg_raw = msg_raw | regex_replace('COD ROSU[\\s\\S]*?(?=COD|$)', '') %}
+                 {% set msg_raw = msg_raw | regex_replace('COD ROȘU[\\s\\S]*?(?=COD|$)', '') %}
+              
+              {% elif cod == 2 %}
+                 {# Dacă e PORTOCALIU, ștergem Galben și Roșu #}
+                 {% set msg_raw = msg_raw | regex_replace('COD GALBEN[\\s\\S]*?(?=COD|$)', '') %}
+                 {% set msg_raw = msg_raw | regex_replace('COD ROSU[\\s\\S]*?(?=COD|$)', '') %}
+                 {% set msg_raw = msg_raw | regex_replace('COD ROȘU[\\s\\S]*?(?=COD|$)', '') %}
+              
+              {% elif cod == 3 %}
+                 {# Dacă e ROȘU, ștergem Galben și Portocaliu #}
+                 {% set msg_raw = msg_raw | regex_replace('COD GALBEN[\\s\\S]*?(?=COD|$)', '') %}
+                 {% set msg_raw = msg_raw | regex_replace('COD PORTOCALIU[\\s\\S]*?(?=COD|$)', '') %}
+              {% endif %}
+
+              {# 3. Curățăm eventualele rânduri goale duble rămase după tăiere #}
+              {% set msg_final = msg_raw | regex_replace('\n\s*\n', '\n\n') | trim %}
+
+              {# 4. Adăugăm la textul final #}
+              {% set ns.text_final = ns.text_final ~ '\n\n' ~ msg_final %}
+            {% endfor %}
+            
+            {{ ns.text_final | trim }}
+          {% else %}
+            Nu sunt avertizări active pentru județul Galați.
+          {% endif %}
