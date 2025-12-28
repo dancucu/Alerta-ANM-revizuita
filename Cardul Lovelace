@@ -1,0 +1,121 @@
+type: conditional
+conditions:
+  - condition: state
+    entity: sensor.avertizare_meteo_galati
+    state: alerta
+card:
+  type: custom:fold-entity-row
+  padding: 0
+  head:
+    type: custom:button-card
+    entity: sensor.mesaj_meteo_galati
+    name: AVERTIZARE METEO (Click)
+    icon: mdi:alert
+    show_name: true
+    show_icon: true
+    show_state: false
+    tap_action:
+      action: none
+    styles:
+      card:
+        - background-color: transparent
+        - box-shadow: none
+        - padding: 0px
+        - margin: 0px
+      icon:
+        - width: 22px
+        - height: 22px
+        - color: |
+            [[[ 
+              const msg = (entity.attributes.mesaj_complet || '').toString().toLowerCase();
+              if (msg.includes('rosu') || msg.includes('roșu')) return '#e74c3c';
+              if (msg.includes('portocaliu')) return '#e67e22';
+              if (msg.includes('galben')) return '#f1c40f';
+              return 'var(--primary-text-color)';
+            ]]]
+        - animation: blink 1s ease-in-out infinite
+      name:
+        - font-weight: 900
+        - font-size: 16px
+        - text-transform: uppercase
+        - color: |
+            [[[ 
+              const msg = (entity.attributes.mesaj_complet || '').toString().toLowerCase();
+              if (msg.includes('rosu') || msg.includes('roșu')) return '#e74c3c';
+              if (msg.includes('portocaliu')) return '#e67e22';
+              if (msg.includes('galben')) return '#f1c40f';
+              return 'var(--primary-text-color)';
+            ]]]
+  entities:
+    - type: custom:button-card
+      entity: sensor.mesaj_meteo_galati
+      show_name: false
+      show_label: true
+      show_state: false
+      show_icon: false
+      label: |
+        [[[ 
+          let msg = entity.attributes.mesaj_complet || 'Nu există detalii.';
+          
+          // 0. DETERMINARE CULOARE DINAMICĂ
+          let highlightColor = 'var(--primary-text-color)'; 
+          const lowerMsg = msg.toLowerCase();
+          if (lowerMsg.includes('rosu') || lowerMsg.includes('roșu')) highlightColor = '#e74c3c';
+          else if (lowerMsg.includes('portocaliu')) highlightColor = '#e67e22';
+          else if (lowerMsg.includes('galben')) highlightColor = '#f1c40f';
+
+          // 1. DEZLIPIRE TEXT
+          msg = msg.replace(/(\d{2})(Fenomene)/g, '$1<br>$2');
+          msg = msg.replace(/(viscol)(Zone)/g, '$1<br>$2');
+          msg = msg.replace(/(textului)/g, '$1<br>');
+          
+          // 2. POZITIONARE "MESAJ [NR]" (Colorat dinamic)
+          msg = msg.replace(/(MESAJ \d+)/g, `<br><br><span style="font-size: 14px; font-weight: 900; letter-spacing: 1px; text-decoration: underline; color: ${highlightColor};">$1</span><br>`);
+
+          // 3. INLOCUIRE TOTALĂ ETICHETE (Colorat dinamic)
+          msg = msg.replace(/Interval de valabilitate:?/g, `<br>• <b style="color: ${highlightColor}">Interval:</b>`);
+          msg = msg.replace(/Fenomene(?: și zone)? vizate:?/g, `<br>• <b style="color: ${highlightColor}">Fenomene:</b>`);
+          msg = msg.replace(/Zone afectate:?/g, `<br>• <b style="color: ${highlightColor}">Zone:</b>`);
+
+          // 4. STILIZARE TITLURI MARI & CODURI
+          // Aici am schimbat culorile hardcoded cu variabila ${highlightColor}
+          msg = msg.replace(/INFORMARE METEOROLOGICĂ/g, `<span style="font-size: 14px; font-weight: 900; color: ${highlightColor};">INFORMARE METEOROLOGICĂ</span>`);
+          msg = msg.replace(/ATENȚIONARE METEOROLOGICĂ/g, `<span style="font-size: 14px; font-weight: 900; color: ${highlightColor};">ATENȚIONARE METEOROLOGICĂ</span>`);
+          msg = msg.replace(/AVERTIZARE METEOROLOGICĂ/g, `<span style="font-size: 14px; font-weight: 900; color: ${highlightColor};">AVERTIZARE METEOROLOGICĂ</span>`);
+          
+          // Codurile raman cu culorile lor specifice de fundal
+          msg = msg.replace(/COD GALBEN/g, '<br><span style="background-color: #f1c40f; color: black; padding: 0 4px; border-radius: 4px;">COD GALBEN</span>');
+          msg = msg.replace(/COD PORTOCALIU/g, '<br><span style="background-color: #e67e22; color: black; padding: 0 4px; border-radius: 4px;">COD PORTOCALIU</span>');
+          msg = msg.replace(/COD ROSU/g, '<br><span style="background-color: #e74c3c; color: white; padding: 0 4px; border-radius: 4px;">COD ROSU</span>');
+
+          // 5. EVIDENTIERE CUVINTE CHEIE
+          const regexCuvinte = /(sudul\s+Moldovei|Moldov[a-zĂÂÎȘȚăâîșț]*|Gala[tț]i[a-zĂÂÎȘȚăâîșț]*|sud-est[a-zĂÂÎȘȚăâîșț\-]*)/gi;
+          
+          msg = msg.replace(regexCuvinte, 
+            `<b style="color: ${highlightColor}; text-decoration: underline;">$&</b>`);
+
+          return msg;
+        ]]]
+      styles:
+        card:
+          - padding: 16px
+          - margin-top: 10px
+          - border-radius: 12px
+          - box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2)
+          - border-left: 6px solid
+          - border-left-color: |
+              [[[ 
+                const msg = (entity.attributes.mesaj_complet || '').toString().toLowerCase();
+                if (msg.includes('rosu') || msg.includes('roșu')) return '#e74c3c';
+                if (msg.includes('portocaliu')) return '#e67e22';
+                if (msg.includes('galben')) return '#f1c40f';
+                return 'transparent';
+              ]]]
+        label:
+          - text-align: left
+          - font-size: 13px
+          - line-height: 1.5
+          - color: var(--secondary-text-color)
+          - white-space: normal
+      tap_action:
+        action: none
